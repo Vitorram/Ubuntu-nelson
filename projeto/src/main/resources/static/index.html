@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <title>CRUD Básico - Projeto</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        body { font-family: Arial, sans-serif; max-width:900px; margin:30px auto; padding:0 16px; color:#222; }
+        h1 { font-size:20px; margin-bottom:6px; }
+        form { border:1px solid #ddd; padding:12px; margin-bottom:14px; border-radius:6px; background:#fafafa; }
+        label { display:block; margin-top:8px; font-size:13px; }
+        input, select { width:100%; padding:8px; margin-top:4px; box-sizing:border-box; }
+        button { margin-top:10px; padding:8px 12px; cursor:pointer; }
+        .row { display:flex; gap:10px; }
+        .col { flex:1; }
+        pre { background:#f4f4f4; padding:10px; border-radius:6px; overflow:auto; }
+        .small { font-size:13px; color:#666; }
+        .actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+    </style>
+</head>
+<body>
+<h1>CRUD Básico — Usuário / Endereço / Documento</h1>
+<p class="small">Certifique-se que sua API Spring Boot está rodando (ex.: http://localhost:8080). Se usar porta diferente, altere <code>BASE_URL</code> abaixo.</p>
+
+<script>
+    const BASE_URL = 'http://localhost:8080'; // ajuste se necessário
+
+    async function requestJson(url, method='GET', body=null) {a
+      const opts = { method, headers: {} };
+      if (body) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, opts);
+      const text = await res.text();
+      // tenta parsear JSON, senão retorna texto
+      try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+      catch (e) { return { ok: res.ok, status: res.status, data: text }; }
+    }
+
+    function showResult(elId, obj) {
+      const el = document.getElementById(elId);
+      el.textContent = JSON.stringify(obj, null, 2);
+    }
+
+    async function createUser(ev) {
+      ev.preventDefault();
+      const nome = document.getElementById('u_nome').value;
+      const email = document.getElementById('u_email').value;
+      const idade = Number(document.getElementById('u_idade').value || 0);
+      const res = await requestJson(`${BASE_URL}/users`, 'POST', { nome, email, idade });
+      showResult('result_user', res);
+      // limpa campos rapidamente
+      if (res.ok) {
+        document.getElementById('u_nome').value = '';
+        document.getElementById('u_email').value = '';
+        document.getElementById('u_idade').value = '';
+        loadUsersIntoSelects();
+      }
+    }
+
+    async function createEndereco(ev) {
+      ev.preventDefault();
+      const usuario_id = Number(document.getElementById('e_user').value);
+      const rua = document.getElementById('e_rua').value;
+      const numero = document.getElementById('e_numero').value;
+      const cidade = document.getElementById('e_cidade').value;
+      // backend pode esperar { user: { id: ... } } ou { usuarioId: ... } dependendo do model.
+      // Aqui enviamos o formato simples com user_id; ajuste se seu backend esperar outro.
+      const payload = { usuarioId: usuario_id, rua, numero, cidade };
+      const res = await requestJson(`${BASE_URL}/enderecos`, 'POST', payload);
+      showResult('result_endereco', res);
+      if (res.ok) {
+        document.getElementById('e_rua').value = '';
+        document.getElementById('e_numero').value = '';
+        document.getElementById('e_cidade').value = '';
+      }
+    }
+
+    async function createDocumento(ev) {
+      ev.preventDefault();
+      const usuario_id = Number(document.getElementById('d_user').value);
+      const tipo = document.getElementById('d_tipo').value;
+      const numero = document.getElementById('d_numero').value;
+      const payload = { usuarioId: usuario_id, tipo, numero };
+      const res = await requestJson(`${BASE_URL}/documentos`, 'POST', payload);
+      showResult('result_documento', res);
+      if (res.ok) { document.getElementById('d_tipo').value = ''; document.getElementById('d_numero').value = ''; }
+    }
+
+    async function loadUsersIntoSelects() {
+      const res = await requestJson(`${BASE_URL}/users`);
+      const users = res.ok ? res.data : [];
+      const selE = document.getElementById('e_user');
+      const selD = document.getElementById('d_user');
+      [selE, selD].forEach(s => { s.innerHTML = '<option value="">-- selecione usuário --</option>'; });
+      if (Array.isArray(users)) {
+        users.forEach(u => {
+          const opt = `<option value="${u.id ?? uIdFrom(u)}">${u.nome ?? u.name ?? 'Nome'}</option>`;
+          selE.insertAdjacentHTML('beforeend', opt);
+          selD.insertAdjacentHTML('beforeend', opt);
+        });
+      }
+    }
+
+    // fallback para pegar id quando o objeto tem formato diferente
+    function uIdFrom(u) {
+      if (!u) return '';
+      return u.id ?? u.userId ?? u.usuarioId ?? '';
+    }
+
+    // baixar export (CSV/JSON/PDF)
+    function downloadUrl(url, filename) {
+      fetch(url).then(resp => {
+        if (!resp.ok) throw new Error('Erro: ' + resp.status);
+        return resp.blob();
+      }).then(blob => {
+        const a = document.createElement('a');
+        const urlBlob = URL.createObjectURL(blob);
+        a.href = urlBlob;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(urlBlob);
+      }).catch(err => alert('Erro ao baixar: ' + err.message));
+    }
+
+    // inicializa selects ao carregar
+    window.addEventListener('load', () => {
+      loadUsersIntoSelects();
+    });
+</script>
+
+<!-- Form: Usuário -->
+<form onsubmit="createUser(event)">
+    <h2>1) Cadastrar Usuário</h2>
+    <label>Nome<input id="u_nome" required></label>
+    <label>Email<input id="u_email" type="email"></label>
+    <label>Idade<input id="u_idade" type="number" min="0"></label>
+    <button type="submit">Salvar Usuário</button>
+    <pre id="result_user">{ resultado }</pre>
+</form>
+
+<!-- Form: Endereço -->
+<form onsubmit="createEndereco(event)">
+    <h2>2) Cadastrar Endereço</h2>
+    <label>Usuário
+        <select id="e_user" required>
+            <option value="">carregando...</option>
+        </select>
+    </label>
+    <label>Rua<input id="e_rua" required></label>
+    <div class="row">
+        <div class="col"><label>Número<input id="e_numero"></label></div>
+        <div class="col"><label>Cidade<input id="e_cidade"></label></div>
+    </div>
+    <button type="submit">Salvar Endereço</button>
+    <pre id="result_endereco">{ resultado }</pre>
+</form>
+
+<!-- Form: Documento -->
+<form onsubmit="createDocumento(event)">
+    <h2>3) Cadastrar Documento</h2>
+    <label>Usuário
+        <select id="d_user" required>
+            <option value="">carregando...</option>
+        </select>
+    </label>
+    <label>Tipo<input id="d_tipo" required placeholder="CPF / RG / Outro"></label>
+    <label>Número<input id="d_numero" required></label>
+    <button type="submit">Salvar Documento</button>
+    <pre id="result_documento">{ resultado }</pre>
+</form>
+
+<div class="actions">
+    <button onclick="downloadUrl(BASE_URL + '/enderecos/export/csv', 'enderecos.csv')">Exportar endereços (CSV)</button>
+    <button onclick="downloadUrl(BASE_URL + '/documentos/export/json', 'documentos.json')">Exportar documentos (JSON)</button>
+    <button onclick="downloadUrl(BASE_URL + '/users/export/pdf', 'usuarios.pdf')">Exportar usuários (PDF)</button>
+    <button onclick="loadUsersIntoSelects()">Recarregar lista de usuários</button>
+    <a href="#" onclick="window.open(BASE_URL + '/users', '_blank')">Abrir /users (API)</a>
+</div>
+
+<p class="small">Observações:
+<ul>
+    <li>Seu backend precisa permitir CORS (usando <code>@CrossOrigin</code> no controller) para chamadas do navegador.</li>
+    <li>Os payloads enviados são simples — caso seu backend espere objetos aninhados (ex.: { user: { id: ... } }) ajuste o JS.</li>
+    <li>Se quiser, eu adapto o HTML para o formato exato das suas APIs Spring Boot.</li>
+</ul>
+</p>
+</body>
+</html>
