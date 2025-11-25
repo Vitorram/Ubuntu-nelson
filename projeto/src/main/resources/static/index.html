@@ -2,184 +2,390 @@
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8" />
-    <title>CRUD Básico - Projeto</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Gestão Completa de Usuários</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: Arial, sans-serif; max-width:900px; margin:30px auto; padding:0 16px; color:#222; }
-        h1 { font-size:20px; margin-bottom:6px; }
-        form { border:1px solid #ddd; padding:12px; margin-bottom:14px; border-radius:6px; background:#fafafa; }
-        label { display:block; margin-top:8px; font-size:13px; }
-        input, select { width:100%; padding:8px; margin-top:4px; box-sizing:border-box; }
-        button { margin-top:10px; padding:8px 12px; cursor:pointer; }
-        .row { display:flex; gap:10px; }
-        .col { flex:1; }
-        pre { background:#f4f4f4; padding:10px; border-radius:6px; overflow:auto; }
-        .small { font-size:13px; color:#666; }
-        .actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+        :root {
+            --primary: #059669;
+            --primary-hover: #047857;
+            --secondary: #3b82f6; /* Azul para editar */
+            --danger: #ef4444;    /* Vermelho para excluir */
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #1f2937;
+            --border: #e5e7eb;
+            --radius: 8px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        h1 { margin-top: 0; color: #111827; }
+        
+        /* Layout Grid Principal */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        /* Cartões */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Tabela de Usuários */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        
+        /* Botões Pequenos da Tabela */
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            margin-right: 4px;
+        }
+        
+        .btn-edit { background-color: var(--secondary); }
+        .btn-delete { background-color: var(--danger); }
+
+        /* Inputs e Botões Grandes */
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-family: inherit;
+        }
+
+        button.primary-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        button.cancel-btn {
+            background-color: #9ca3af;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            display: none; /* Escondido por padrão */
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; }
+        
+        /* Badges de Status */
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
-<h1>CRUD Básico — Usuário / Endereço / Documento</h1>
-<p class="small">Certifique-se que sua API Spring Boot está rodando (ex.: http://localhost:8080). Se usar porta diferente, altere <code>BASE_URL</code> abaixo.</p>
+
+<div class="container">
+    <header style="margin-bottom:30px; text-align:center;">
+        <h1>Painel de Usuários</h1>
+        <p style="color:#666;">Gerencie usuários (CRUD), endereços e documentos.</p>
+    </header>
+
+    <div class="main-grid">
+        
+        <div class="card">
+            <div class="section-title">
+                Lista de Usuários
+                <button onclick="loadUsersTable()" class="btn-sm" style="background:#6b7280;">🔄 Atualizar</button>
+            </div>
+            
+            <div class="table-container">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th width="50">ID</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th width="60">Idade</th>
+                            <th width="140">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="5" style="text-align:center">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--primary);">
+            <div class="section-title">
+                <span id="formTitle">Novo Usuário</span>
+            </div>
+            
+            <form onsubmit="handleUserSubmit(event)">
+                <input type="hidden" id="u_id"> <label>Nome Completo</label>
+                <input id="u_nome" required placeholder="Ex: Maria Silva">
+
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px;">
+                    <div>
+                        <label>Email</label>
+                        <input id="u_email" type="email" placeholder="maria@email.com">
+                    </div>
+                    <div>
+                        <label>Idade</label>
+                        <input id="u_idade" type="number" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="btnSave" class="primary-btn">Salvar Usuário</button>
+                    <button type="button" id="btnCancel" class="cancel-btn" onclick="cancelEdit()">Cancelar Edição</button>
+                </div>
+            </form>
+            
+            <div style="margin-top:10px; font-size:12px; color:#666;">
+                Status: <span id="formStatus">Aguardando ação...</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Adicionar Dados Extras</div>
+            <p style="font-size:13px; color:#666; margin-bottom:15px;">Use os formulários abaixo para vincular dados aos usuários criados acima.</p>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <form onsubmit="createEndereco(event)">
+                    <label><b>Endereço:</b> Usuário (ID)</label>
+                    <input id="e_user_id" type="number" required placeholder="ID do usuário">
+                    <label>Rua</label>
+                    <input id="e_rua" required placeholder="Nome da rua">
+                    <button type="submit" class="btn-sm" style="background:#4b5563; width:100%; padding:10px;">+ Add Endereço</button>
+                    <small id="res_end"></small>
+                </form>
+
+                <form onsubmit="createDocumento(event)">
+                    <label><b>Documento:</b> Usuário (ID)</label>
+                    <input id="d_user_id" type="number" required placeholder="ID do usuário">
+                    <label>Número Doc</label>
+                    <input id="d_numero" required placeholder="CPF/RG">
+                    <button type="submit" class="btn-sm" style="background:#4b5563; width:100%; padding:10px;">+ Add Documento</button>
+                    <small id="res_doc"></small>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
 
 <script>
-    const BASE_URL = 'http://localhost:8080'; // ajuste se necessário
+    // Don't include a trailing slash here — code concatenates paths with a leading slash ("/users").
+    // The previous trailing slash produced URLs like https://...//users (double slash) which caused
+    // requests to be routed incorrectly and to fail CORS/preflight checks in some environments.
+    const BASE_URL = 'https://urban-cod-r47rw7rwwr5jfv9j-8080.app.github.dev';
+    let isEditing = false; // Estado para controlar se é Create ou Edit
 
-    async function requestJson(url, method='GET', body=null) {a
-      const opts = { method, headers: {} };
-      if (body) {
-        opts.headers['Content-Type'] = 'application/json';
-        opts.body = JSON.stringify(body);
-      }
-      const res = await fetch(url, opts);
-      const text = await res.text();
-      // tenta parsear JSON, senão retorna texto
-      try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
-      catch (e) { return { ok: res.ok, status: res.status, data: text }; }
+    // --- FUNÇÕES UTILITÁRIAS ---
+    async function requestJson(url, method='GET', body=null) {
+        const opts = { method, headers: {} };
+        if (body) {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(body);
+        }
+        try {
+            const res = await fetch(url, opts);
+            const text = await res.text();
+            try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+            catch (e) { return { ok: res.ok, status: res.status, data: text }; }
+        } catch (err) {
+            console.error(err);
+            return { ok: false, data: "Erro de conexão" };
+        }
     }
 
-    function showResult(elId, obj) {
-      const el = document.getElementById(elId);
-      el.textContent = JSON.stringify(obj, null, 2);
+    // --- LÓGICA DE USUÁRIOS (CRUD COMPLETO) ---
+
+    // 1. READ (Ler e montar tabela)
+    async function loadUsersTable() {
+        const tbody = document.querySelector('#usersTable tbody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Atualizando...</td></tr>';
+        
+        const res = await requestJson(`${BASE_URL}/users`);
+        
+        if (!res.ok || !Array.isArray(res.data)) {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:red; text-align:center">Erro ao carregar usuários ou lista vazia.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = ''; // Limpa
+        res.data.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>#${u.id}</td>
+                <td><b>${u.nome}</b></td>
+                <td>${u.email || '-'}</td>
+                <td>${u.idade || '-'}</td>
+                <td>
+                    <button class="btn-sm btn-edit" onclick='startEdit(${JSON.stringify(u)})'>Editar</button>
+                    <button class="btn-sm btn-delete" onclick="deleteUser(${u.id})">Excluir</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 
-    async function createUser(ev) {
-      ev.preventDefault();
-      const nome = document.getElementById('u_nome').value;
-      const email = document.getElementById('u_email').value;
-      const idade = Number(document.getElementById('u_idade').value || 0);
-      const res = await requestJson(`${BASE_URL}/users`, 'POST', { nome, email, idade });
-      showResult('result_user', res);
-      // limpa campos rapidamente
-      if (res.ok) {
+    // 2. PREPARAR EDIÇÃO (Popula o form)
+    function startEdit(user) {
+        isEditing = true;
+        document.getElementById('u_id').value = user.id;
+        document.getElementById('u_nome').value = user.nome;
+        document.getElementById('u_email').value = user.email || '';
+        document.getElementById('u_idade').value = user.idade || '';
+
+        // UI Changes
+        document.getElementById('formTitle').textContent = `Editando Usuário #${user.id}`;
+        document.getElementById('formTitle').style.color = 'var(--secondary)';
+        document.getElementById('btnSave').textContent = 'Atualizar Usuário';
+        document.getElementById('btnSave').style.backgroundColor = 'var(--secondary)';
+        document.getElementById('btnCancel').style.display = 'block';
+        
+        document.getElementById('u_nome').focus();
+    }
+
+    // 3. CANCELAR EDIÇÃO
+    function cancelEdit() {
+        isEditing = false;
+        document.getElementById('u_id').value = '';
         document.getElementById('u_nome').value = '';
         document.getElementById('u_email').value = '';
         document.getElementById('u_idade').value = '';
-        loadUsersIntoSelects();
-      }
+
+        // UI Reset
+        document.getElementById('formTitle').textContent = 'Novo Usuário';
+        document.getElementById('formTitle').style.color = 'var(--text-main)';
+        document.getElementById('btnSave').textContent = 'Salvar Usuário';
+        document.getElementById('btnSave').style.backgroundColor = 'var(--primary)';
+        document.getElementById('btnCancel').style.display = 'none';
     }
 
+    // 4. CREATE ou UPDATE (Submit handler)
+    async function handleUserSubmit(ev) {
+        ev.preventDefault();
+        const id = document.getElementById('u_id').value;
+        const nome = document.getElementById('u_nome').value;
+        const email = document.getElementById('u_email').value;
+        const idade = Number(document.getElementById('u_idade').value);
+        const statusEl = document.getElementById('formStatus');
+
+        statusEl.textContent = "Processando...";
+
+        let res;
+        if (isEditing) {
+            // PUT (Editar)
+            res = await requestJson(`${BASE_URL}/users/${id}`, 'PUT', { nome, email, idade });
+        } else {
+            // POST (Criar)
+            res = await requestJson(`${BASE_URL}/users`, 'POST', { nome, email, idade });
+        }
+
+        if (res.ok) {
+            statusEl.textContent = isEditing ? "Usuário atualizado com sucesso!" : "Usuário criado com sucesso!";
+            statusEl.style.color = "green";
+            cancelEdit(); // Limpa form e volta ao estado inicial
+            loadUsersTable(); // Recarrega lista
+        } else {
+            statusEl.textContent = "Erro: " + JSON.stringify(res.data);
+            statusEl.style.color = "red";
+        }
+    }
+
+    // 5. DELETE
+    async function deleteUser(id) {
+        if(!confirm(`Tem certeza que deseja excluir o usuário #${id}?`)) return;
+        
+        const res = await requestJson(`${BASE_URL}/users/${id}`, 'DELETE');
+        if (res.ok) {
+            loadUsersTable();
+        } else {
+            alert("Erro ao excluir: " + JSON.stringify(res.data));
+        }
+    }
+
+    // --- OUTROS (Endereço/Doc simplificados) ---
     async function createEndereco(ev) {
-      ev.preventDefault();
-      const usuario_id = Number(document.getElementById('e_user').value);
-      const rua = document.getElementById('e_rua').value;
-      const numero = document.getElementById('e_numero').value;
-      const cidade = document.getElementById('e_cidade').value;
-      // backend pode esperar { user: { id: ... } } ou { usuarioId: ... } dependendo do model.
-      // Aqui enviamos o formato simples com user_id; ajuste se seu backend esperar outro.
-      const payload = { usuarioId: usuario_id, rua, numero, cidade };
-      const res = await requestJson(`${BASE_URL}/enderecos`, 'POST', payload);
-      showResult('result_endereco', res);
-      if (res.ok) {
-        document.getElementById('e_rua').value = '';
-        document.getElementById('e_numero').value = '';
-        document.getElementById('e_cidade').value = '';
-      }
+        ev.preventDefault();
+        const usuarioId = Number(document.getElementById('e_user_id').value);
+        const rua = document.getElementById('e_rua').value;
+        const res = await requestJson(`${BASE_URL}/enderecos`, 'POST', { usuarioId, rua });
+        document.getElementById('res_end').textContent = res.ok ? "Endereço salvo!" : "Erro!";
     }
 
     async function createDocumento(ev) {
-      ev.preventDefault();
-      const usuario_id = Number(document.getElementById('d_user').value);
-      const tipo = document.getElementById('d_tipo').value;
-      const numero = document.getElementById('d_numero').value;
-      const payload = { usuarioId: usuario_id, tipo, numero };
-      const res = await requestJson(`${BASE_URL}/documentos`, 'POST', payload);
-      showResult('result_documento', res);
-      if (res.ok) { document.getElementById('d_tipo').value = ''; document.getElementById('d_numero').value = ''; }
+        ev.preventDefault();
+        const usuarioId = Number(document.getElementById('d_user_id').value);
+        const numero = document.getElementById('d_numero').value;
+        const res = await requestJson(`${BASE_URL}/documentos`, 'POST', { usuarioId, numero, tipo: 'CPF' });
+        document.getElementById('res_doc').textContent = res.ok ? "Doc salvo!" : "Erro!";
     }
 
-    async function loadUsersIntoSelects() {
-      const res = await requestJson(`${BASE_URL}/users`);
-      const users = res.ok ? res.data : [];
-      const selE = document.getElementById('e_user');
-      const selD = document.getElementById('d_user');
-      [selE, selD].forEach(s => { s.innerHTML = '<option value="">-- selecione usuário --</option>'; });
-      if (Array.isArray(users)) {
-        users.forEach(u => {
-          const opt = `<option value="${u.id ?? uIdFrom(u)}">${u.nome ?? u.name ?? 'Nome'}</option>`;
-          selE.insertAdjacentHTML('beforeend', opt);
-          selD.insertAdjacentHTML('beforeend', opt);
-        });
-      }
-    }
-
-    // fallback para pegar id quando o objeto tem formato diferente
-    function uIdFrom(u) {
-      if (!u) return '';
-      return u.id ?? u.userId ?? u.usuarioId ?? '';
-    }
-
-    // baixar export (CSV/JSON/PDF)
-    function downloadUrl(url, filename) {
-      fetch(url).then(resp => {
-        if (!resp.ok) throw new Error('Erro: ' + resp.status);
-        return resp.blob();
-      }).then(blob => {
-        const a = document.createElement('a');
-        const urlBlob = URL.createObjectURL(blob);
-        a.href = urlBlob;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(urlBlob);
-      }).catch(err => alert('Erro ao baixar: ' + err.message));
-    }
-
-    // inicializa selects ao carregar
-    window.addEventListener('load', () => {
-      loadUsersIntoSelects();
-    });
+    // Inicialização
+    window.addEventListener('load', loadUsersTable);
 </script>
-
-<!-- Form: Usuário -->
-<form onsubmit="createUser(event)">
-    <h2>1) Cadastrar Usuário</h2>
-    <label>Nome<input id="u_nome" required></label>
-    <label>Email<input id="u_email" type="email"></label>
-    <label>Idade<input id="u_idade" type="number" min="0"></label>
-    <button type="submit">Salvar Usuário</button>
-    <pre id="result_user">{ resultado }</pre>
-</form>
-
-<!-- Form: Endereço -->
-<form onsubmit="createEndereco(event)">
-    <h2>2) Cadastrar Endereço</h2>
-    <label>Usuário
-        <select id="e_user" required>
-            <option value="">carregando...</option>
-        </select>
-    </label>
-    <label>Rua<input id="e_rua" required></label>
-    <div class="row">
-        <div class="col"><label>Número<input id="e_numero"></label></div>
-        <div class="col"><label>Cidade<input id="e_cidade"></label></div>
-    </div>
-    <button type="submit">Salvar Endereço</button>
-    <pre id="result_endereco">{ resultado }</pre>
-</form>
-
-<!-- Form: Documento -->
-<form onsubmit="createDocumento(event)">
-    <h2>3) Cadastrar Documento</h2>
-    <label>Usuário
-        <select id="d_user" required>
-            <option value="">carregando...</option>
-        </select>
-    </label>
-    <label>Tipo<input id="d_tipo" required placeholder="CPF / RG / Outro"></label>
-    <label>Número<input id="d_numero" required></label>
-    <button type="submit">Salvar Documento</button>
-    <pre id="result_documento">{ resultado }</pre>
-</form>
-
-<div class="actions">
-    <button onclick="downloadUrl(BASE_URL + '/enderecos/export/csv', 'enderecos.csv')">Exportar endereços (CSV)</button>
-    <button onclick="downloadUrl(BASE_URL + '/documentos/export/json', 'documentos.json')">Exportar documentos (JSON)</button>
-    <button onclick="downloadUrl(BASE_URL + '/users/export/pdf', 'usuarios.pdf')">Exportar usuários (PDF)</button>
-    <button onclick="loadUsersIntoSelects()">Recarregar lista de usuários</button>
-    <a href="#" onclick="window.open(BASE_URL + '/users', '_blank')">Abrir /users (API)</a>
-</div>
 
 </body>
 </html>
